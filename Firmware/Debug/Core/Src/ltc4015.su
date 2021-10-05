@@ -1,0 +1,6 @@
+ltc4015.c:13:9:i2c_read16	40	static
+ltc4015.c:21:9:i2c_write16	40	static
+ltc4015.c:30:9:LTC4015_check	24	static
+ltc4015.c:51:6:LTC4015_VBAT_limits	16	static
+ltc4015.c:60:10:LTC4015_get_vin	16	static
+ltc4015.c:67:6:LTC4015_init	8	static

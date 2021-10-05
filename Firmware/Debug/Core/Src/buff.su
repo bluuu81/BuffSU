@@ -1,0 +1,5 @@
+buff.c:19:7:_write	24	static
+buff.c:25:8:debug_putchar	16	static
+buff.c:31:7:Round_filter_fl	24	static
+buff.c:41:9:Round_filter_int	24	static
+buff.c:51:6:checkPowerOff	16	static

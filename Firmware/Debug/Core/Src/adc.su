@@ -1,0 +1,12 @@
+adc.c:22:6:ADC_DMA_Start	8	static
+adc.c:31:6:ADC_Print	16	static
+adc.c:46:7:GET_Buff_Temp	24	static
+adc.c:63:7:GET_SYS_5V	16	static
+adc.c:78:7:GET_DC_5V	16	static
+adc.c:93:7:GET_STB_5V	16	static
+adc.c:108:7:GET_SYS_12V	16	static
+adc.c:123:7:GET_DC_12V	16	static
+adc.c:138:10:GET_HDD_12V_CURR	16	static
+adc.c:153:10:GET_HDD_5V_CURR	16	static
+adc.c:168:10:GET_SYS_12V_CURR	16	static
+adc.c:183:10:GET_SYS_5V_CURR	16	static
