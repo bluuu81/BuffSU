@@ -69,6 +69,22 @@ uint8_t ps_pg_state, rpi_feedback;
 uint8_t ps_count = 0;
 uint8_t pg_count = 0;
 
+//charger variables
+uint8_t num_cells, chem_type;
+
+enum chem_type
+{
+	LI_ION_PROG = 0,
+	LI_ION_4_2,
+	LI_ION_4_1,
+	LI_ION_4_0,
+	LI_FEPO4_PROG,
+	LI_FEPO4_FFC,
+	LI_FEPO4_3_6,
+	PB_FIX,
+	PB_PROG,
+};
+
 enum run_state
 {
 	WARMUP = 0,
@@ -177,11 +193,12 @@ int main(void)
 
   if (LTC4015_check())
   {
-	LTC4015_init();
+	num_cells = LTC4015_get_cells();
+	chem_type = LTC4015_get_chem();
+	printf("Chem type : %d   Num cells : %d \r\n", chem_type, num_cells);
+	LTC4015_init(); //pusta
+	LTC4015_VBAT_limits(7.6, 12.7, num_cells, chem_type);
   }
-
-
-
 
   ticks = HAL_GetTick();
   ticks20 = HAL_GetTick();

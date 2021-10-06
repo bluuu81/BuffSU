@@ -28,7 +28,7 @@
 #define BSR 0x41 // Calculated battery series resistance.
  // For lithium chemistries, series resistance/cellcount = BSR x Rsnsb/500.0
  // For lead-acid chemistries, series resistance/cellcount = BSR x RSNSB/750.0
-
+#define CHEM_CELLS 0x43 // Readout of CHEM and CELLS pin settings
 // Config registers
 
 #define VBAT_LO_ALERT_LIMIT 0x01 // Battery voltage low alert limit
@@ -51,6 +51,9 @@ extern I2C_HandleTypeDef hi2c1;
 
 uint8_t LTC4015_check();
 uint16_t LTC4015_get_vin();
+uint8_t LTC4015_get_cells();
+uint8_t LTC4015_get_chem();
+void LTC4015_VBAT_limits (float lo, float hi, uint8_t _cells, uint8_t _chem);
 void LTC4015_init();
 
 #endif /* INC_LTC4015_H_ */

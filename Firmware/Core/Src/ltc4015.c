@@ -49,10 +49,20 @@ uint8_t LTC4015_check()
 
 // LTC4015 configuration
 
-void LTC4015_VBAT_limits (uint16_t hi, uint16_t lo)
+void LTC4015_VBAT_limits (float lo, float hi, uint8_t _cells, uint8_t _chem)
 {
-	i2c_write16(VBAT_LO_ALERT_LIMIT, lo);
-	i2c_write16(VBAT_HI_ALERT_LIMIT, hi);
+	uint16_t val_l,val_h;
+	float chem_const;
+
+	if(_chem >= 0 && _chem <=6) chem_const = 0.000192264f;
+	else chem_const = 0.000128176f;
+
+	val_l = (uint16_t)(lo / (_cells * chem_const));
+	val_h = (uint16_t)(hi / (_cells * chem_const));
+
+	printf("VBAT LO: %d   VBAT HI: %d \r\n", val_l, val_h);
+	i2c_write16(VBAT_LO_ALERT_LIMIT, val_l);
+	i2c_write16(VBAT_HI_ALERT_LIMIT, val_h);
 }
 
 
@@ -65,7 +75,25 @@ uint16_t LTC4015_get_vin()
     return status;
 }
 
+
+uint8_t LTC4015_get_cells()
+{
+	uint16_t tmp;
+	i2c_read16(CHEM_CELLS, &tmp);
+	uint8_t cell_count = tmp & 0x0F;
+	return cell_count;
+}
+
+uint8_t LTC4015_get_chem()
+{
+	uint16_t tmp;
+	uint8_t chem;
+	i2c_read16(CHEM_CELLS, &tmp);
+	chem = (tmp >> chem) & 0x0F;
+	return chem;
+}
+
 void LTC4015_init()
 {
-	LTC4015_VBAT_limits(0,0);
+//	LTC4015_VBAT_limits(0,0);
 }
