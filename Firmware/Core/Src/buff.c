@@ -5,12 +5,14 @@
  *      Author: bluuu
  */
 #include "buff.h"
+#include "ltc4015.h"
 #include <stdio.h>
+#include "main.h"
 
 #define MAX_FILTERS_FL 1
 #define FILTSTR_FL  20       // sila filtru
 
-#define MAX_FILTERS_INT 4
+#define MAX_FILTERS_INT 7
 #define FILTSTR_INT  8       // sila filtru
 
 
@@ -59,6 +61,10 @@ void checkPowerOff()
      if(Power_SW_READ() == GPIO_PIN_SET)  presscnt++; else presscnt = 0;
      if(presscnt > 20)          // 2 sekundy naciskania
      {
+    	 BUZZ_ON();
+    	 HAL_Delay(800);
+    	 BUZZ_OFF();
+    	 stop_meas();
          POWER_OFF();
          printf("Power OFF\r\n");
          // przygotowanie pinu wakeup

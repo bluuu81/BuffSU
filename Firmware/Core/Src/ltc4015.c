@@ -7,6 +7,8 @@
 #include "ltc4015.h"
 #include "main.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 #define LTC_ADDR 0xD0
 
@@ -25,6 +27,19 @@ uint8_t i2c_write16(uint16_t offset, uint16_t value)
     return res;
 }
 
+void clr_bit(unsigned char sub_address, unsigned short new_word) {
+    unsigned short old_word;
+    i2c_read16(sub_address, &old_word);
+    old_word &= ~new_word;
+    i2c_write16(sub_address, old_word);
+}
+
+void set_bit(unsigned char sub_address, unsigned short new_word) {
+    unsigned short old_word;
+    i2c_read16(sub_address, &old_word);
+    old_word |= new_word;
+    i2c_write16(sub_address, old_word);
+}
 
 // Checking
 uint8_t LTC4015_check()
@@ -65,14 +80,120 @@ void LTC4015_VBAT_limits (float lo, float hi, uint8_t _cells, uint8_t _chem)
 	i2c_write16(VBAT_HI_ALERT_LIMIT, val_h);
 }
 
+void LTC4015_VIN_limits (float lo, float hi)
+{
+	uint16_t val_l,val_h;
+
+	val_l = (uint16_t)(lo / 0.001648f);
+	val_h = (uint16_t)(hi / 0.001648f);
+
+	printf("VIN LO: %d   VIN HI: %d \r\n", val_l, val_h);
+	i2c_write16(VIN_LO_ALERT_LIMIT, val_l);
+	i2c_write16(VIN_HI_ALERT_LIMIT, val_h);
+}
+
+void LTC4015_set_charge_voltage(float ch_volt, uint8_t _cells, uint8_t _chem)
+{
+	uint8_t val;
+	float ch_cell;
+
+	ch_cell = ch_volt/_cells;
+
+	if(_chem >= 0 && _chem <=3)
+		{
+			ch_cell -= 3.8125f;
+			val = (uint8_t)(ch_cell * 80);
+		}
+	else if (_chem >= 4 && _chem <=6)
+		{
+			ch_cell -= 3.4125f;
+			val = (uint8_t)(ch_cell * 80);
+		}
+	else
+		{
+			ch_cell -= 2.0;
+			val = (uint8_t)(ch_cell * 105);
+		}
+	i2c_write16(VCHARGE_SETTING, val);
+	printf("Vcharge : %d \r\n", val);
+}
+
+void LTC4015_set_charge_current(float ch_curr, uint8_t rsnb)
+{
+	uint8_t val;
+	val = (uint8_t)((ch_curr * rsnb) - 1);
+	i2c_write16(ICHARGE_TARGET, val);
+	printf("Icharge : %d \r\n", val);
+}
+
+// Control bits
+inline void stop_charging()  	{ set_bit(CONFIG_BITS, suspend_charger); }
+inline void start_charging()    { clr_bit(CONFIG_BITS, suspend_charger); }
+
+inline void start_meas()		{ set_bit(CONFIG_BITS, force_meas_sys_on); }
+inline void stop_meas()			{ clr_bit(CONFIG_BITS, force_meas_sys_on); }
+
+inline void start_run_bsr()		{ set_bit(CONFIG_BITS, run_bsr); }
+inline void stop_run_bsr()		{ clr_bit(CONFIG_BITS, run_bsr); }
 
 // LTC4015 read registers
 
-uint16_t LTC4015_get_vin()
+uint16_t read_register_val(uint8_t reg)
 {
-    uint16_t status;
-    if(i2c_read16(VIN, &status)) return -1;;
-    return status;
+	uint16_t value;
+	if(i2c_read16(reg, &value)) return -1;
+	printf("REG : %#04X , Value: %d \r\n", reg, value);
+    return value;
+}
+
+float LTC4015_get_vin()
+{
+    uint16_t value;
+    float val;
+    if(i2c_read16(VIN, &value)) return -1;
+    val = value * 0.001648f;
+    return (float)val;
+}
+
+
+float LTC4015_get_vbat(uint8_t _cells, uint8_t _chem)
+{
+    uint16_t value;
+    float val;
+	float chem_const;
+	if(_chem >= 0 && _chem <=6) chem_const = 0.000192264f;
+	else chem_const = 0.000128176f;
+    if(i2c_read16(VBAT, &value)) return -1;
+    value *= _cells;
+    val = value * chem_const;
+    return (float)val;
+}
+
+int16_t LTC4015_get_iin(uint8_t rsni)
+{
+	uint16_t value;
+	int16_t curr;
+	if(i2c_read16(IIN, &value)) return -1;
+	curr = round((int16_t)value * 1.46487f) / rsni;
+	return curr;
+}
+
+int16_t LTC4015_get_ibat(uint8_t rsnb)
+{
+	uint16_t value;
+	int16_t curr;
+	if(i2c_read16(IBAT, &value)) return -1;
+	curr = round((int16_t)value * 1.46487f) / rsnb;
+	return curr;
+}
+
+float LTC4015_get_dietemp()
+{
+	uint16_t value;
+	float temp;
+	if(i2c_read16(DIE_TEMP, &value)) return -1;
+	temp = (value - 12010) / 45.6f;
+	return temp;
 }
 
 
@@ -95,5 +216,7 @@ uint8_t LTC4015_get_chem()
 
 void LTC4015_init()
 {
+	start_meas();
+	HAL_Delay(15);
 //	LTC4015_VBAT_limits(0,0);
 }

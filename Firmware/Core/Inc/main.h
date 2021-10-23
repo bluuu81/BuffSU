@@ -33,6 +33,7 @@ extern "C" {
 void fill_voltage_table(void);
 void fill_current_table(void);
 void supply_check_select(void);
+void print_regs();
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -98,7 +99,7 @@ void Error_Handler(void);
 #define RPI_FB_Pin GPIO_PIN_15
 #define RPI_FB_GPIO_Port GPIOB
 #define TP2_Pin GPIO_PIN_8
-#define TP2_GPIO_Port GPIOA
+#define TP2_GPIO_Port GPIOB
 #define Debug_TX_Pin GPIO_PIN_9
 #define Debug_TX_GPIO_Port GPIOA
 #define Debug_RX_Pin GPIO_PIN_10
@@ -116,7 +117,7 @@ void Error_Handler(void);
 #define SMBALERT_Pin GPIO_PIN_5
 #define SMBALERT_GPIO_Port GPIOB
 #define Buzz_Pin GPIO_PIN_8
-#define Buzz_GPIO_Port GPIOB
+#define Buzz_GPIO_Port GPIOA
 #define LED1_Pin GPIO_PIN_9
 #define LED1_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
@@ -143,6 +144,7 @@ void Error_Handler(void);
 
 #define PS_PG_READ()     HAL_GPIO_ReadPin(PS_PG_GPIO_Port, PS_PG_Pin)
 #define RPI_FB_READ()    HAL_GPIO_ReadPin(RPI_FB_GPIO_Port, RPI_FB_Pin)
+#define SMBALERT_READ()  HAL_GPIO_ReadPin(SMBALERT_GPIO_Port, SMBALERT_Pin)
 
 #define POWER_ON()		HAL_GPIO_WritePin(MAIN_SW_GPIO_Port, MAIN_SW_Pin, GPIO_PIN_SET)
 #define POWER_OFF()		HAL_GPIO_WritePin(MAIN_SW_GPIO_Port, MAIN_SW_Pin, GPIO_PIN_RESET)
@@ -150,6 +152,8 @@ void Error_Handler(void);
 #define PS_ON()			HAL_GPIO_WritePin(PS_ONOFF_GPIO_Port, PS_ONOFF_Pin, GPIO_PIN_SET)
 #define PS_OFF()		HAL_GPIO_WritePin(PS_ONOFF_GPIO_Port, PS_ONOFF_Pin, GPIO_PIN_RESET)
 
+#define BUZZ_ON()		HAL_GPIO_WritePin(Buzz_GPIO_Port, Buzz_Pin, GPIO_PIN_SET)
+#define BUZZ_OFF()		HAL_GPIO_WritePin(Buzz_GPIO_Port, Buzz_Pin, GPIO_PIN_RESET)
 
 #define WDR() if(hiwdg.Instance == IWDG) {HAL_IWDG_Refresh(&hiwdg);}
 

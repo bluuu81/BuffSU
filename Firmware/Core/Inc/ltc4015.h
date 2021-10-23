@@ -11,7 +11,8 @@
 #include "stm32f1xx_hal.h"
 
 //Read registers
-
+#define VBAT 0x3A // Two's complement ADC measurement result for VIN.
+ // VIN = [VIN] x 1.8mV
 #define VIN 0x3B // Two's complement ADC measurement result for VIN.
  // VIN = [VIN] x 1.8mV
 #define VSYS 0x3C // Two's complement ADC measurement result for VSYS.
@@ -44,16 +45,40 @@
 #define NTC_RATIO_HI_ALERT_LIMIT 0x0B // Thermistor ratio high (cold battery) alert limit
 #define NTC_RATIO_LO_ALERT_LIMIT 0x0C // Thermistor ratio low (hot battery) alert limit
 
+#define ICHARGE_TARGET 0x1A // Maximum charge current target = (ICHARGE_TARGET + 1)x1mV/RSNSB
+#define VCHARGE_SETTING 0x1B // Charge voltage target.
+
+//Control bits
+#define CONFIG_BITS 0x14 // Configuration Settings
+#define suspend_charger (1 << 8)
+#define force_meas_sys_on (1 << 4)
+#define run_bsr (1 << 5)
+
 extern I2C_HandleTypeDef hi2c1;
 
 //uint8_t i2c_read16(uint16_t offset, uint16_t *value);
 //uint8_t i2c_write16(uint16_t offset, uint16_t value);
 
 uint8_t LTC4015_check();
-uint16_t LTC4015_get_vin();
+float LTC4015_get_vin();
+float LTC4015_get_vbat(uint8_t _cells, uint8_t _chem);
+int16_t LTC4015_get_iin(uint8_t rsni);
+int16_t LTC4015_get_ibat(uint8_t rsnb);
+float LTC4015_get_dietemp();
 uint8_t LTC4015_get_cells();
 uint8_t LTC4015_get_chem();
 void LTC4015_VBAT_limits (float lo, float hi, uint8_t _cells, uint8_t _chem);
+void LTC4015_VIN_limits (float lo, float hi);
+void LTC4015_set_charge_current(float ch_curr, uint8_t rsnb);
+void LTC4015_set_charge_voltage(float ch_volt, uint8_t _cells, uint8_t _chem);
+uint16_t read_register_val(uint8_t reg);
+
+void stop_charging();
+void start_charging();
+void start_meas();
+void stop_meas();
+void start_run_bsr();
+void stop_run_bsr();
 void LTC4015_init();
 
 #endif /* INC_LTC4015_H_ */

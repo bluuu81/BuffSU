@@ -30,8 +30,8 @@ void ADC_DMA_Start()
 
 void ADC_Print()
 {
-//	  printf("ADC 1: %d , ADC 2: %d \n", adc_data[0], adc_data[1]);
-		for(int i=0; i<10; i++)
+	  printf("ADC 1: %d , ADC 2: %d ADC 3: %d ADC 4: %d \r\n", adc_data[0], adc_data[1], adc_data[2], adc_data[3]);
+/*		for(int i=0; i<10; i++)
 		{
 			printf("ADC %d : %d ", i+1, adc_data[i]);
 		}
@@ -41,6 +41,7 @@ void ADC_Print()
 			printf("ADC %d : %d ", i-9, adc_data[i]);
 		}
 		printf("\n");
+		*/
 }
 
 float GET_Buff_Temp()
@@ -135,10 +136,10 @@ float GET_DC_12V()
 	  	return voltage+DC12V_OFFSET;
 }
 
-uint16_t GET_HDD_12V_CURR()
+int16_t GET_HDD_12V_CURR()
 {
-	    uint16_t tmp=0;
-	    uint16_t current;
+	    int16_t tmp=0;
+	    int16_t current;
 
 	  	for(uint8_t i=2; i<50;i+=10)
 	  	{
@@ -146,14 +147,14 @@ uint16_t GET_HDD_12V_CURR()
 	  	}
 	  	tmp/=5;
 
-	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
+	  	current = (((33000U * tmp) / 4096) - 3150) / 2;
 	  	return current; // mA
 }
 
-uint16_t GET_HDD_5V_CURR()
+int16_t GET_HDD_5V_CURR()
 {
-	    uint16_t tmp=0;
-	    uint16_t current;
+	    int16_t tmp=0;
+	    int16_t current;
 
 	  	for(uint8_t i=1; i<50;i+=10)
 	  	{
@@ -161,14 +162,14 @@ uint16_t GET_HDD_5V_CURR()
 	  	}
 	  	tmp/=5;
 
-	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
+	  	current = (((33000U * tmp) / 4096) - 3150) / 2;
 	  	return current; // mA
 }
 
-uint16_t GET_SYS_12V_CURR()
+int16_t GET_SYS_12V_CURR()
 {
-	    uint16_t tmp=0;
-	    uint16_t current;
+	    int16_t tmp=0;
+	    int16_t current;
 
 	  	for(uint8_t i=4; i<50;i+=10)
 	  	{
@@ -180,10 +181,10 @@ uint16_t GET_SYS_12V_CURR()
 	  	return current; // mA
 }
 
-uint16_t GET_SYS_5V_CURR()
+int16_t GET_SYS_5V_CURR()
 {
-	    uint16_t tmp=0;
-	    uint16_t current;
+	    int16_t tmp=0;
+	    int16_t current;
 
 	  	for(uint8_t i=3; i<50;i+=10)
 	  	{
@@ -192,6 +193,7 @@ uint16_t GET_SYS_5V_CURR()
 	  	tmp/=5;
 
 	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
+//	  	if (current < 0) current = 0;
 	  	return current; // mA
 }
 

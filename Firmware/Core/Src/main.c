@@ -46,26 +46,33 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
-
 I2C_HandleTypeDef hi2c1;
-
 IWDG_HandleTypeDef hiwdg;
-
 TIM_HandleTypeDef htim4;
-
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 
-uint32_t  ticks, ticks20, ticks5s;
+//charger limits define
+#define RSNB 3
+#define RSNI 3
+
+#define CHARGER_VBAT_LO_LIMIT 6.0f
+#define CHARGER_VBAT_HI_LIMIT 8.5f
+#define CHARGER_VIN_LO_LIMIT 10.8f
+#define CHARGER_VIN_HI_LIMIT 12.8f
+#define CHARGER_VOLTAGE 8.4f
+#define CHARGER_CURRENT 3.5f
+
+uint32_t  ticks, ticks20, ticks100, ticks5s;
 float sys_temp;
-float volt_table[5];
-uint16_t curr_table[4];
+float volt_table[7];
+int16_t curr_table[6];
 
 uint8_t run_state = 0;
 uint8_t stan = 0;
-uint8_t ps_pg_state, rpi_feedback;
+uint8_t ps_pg_state, rpi_feedback, smbalert;
 uint8_t ps_count = 0;
 uint8_t pg_count = 0;
 
@@ -160,6 +167,9 @@ int main(void)
   {
     if(HAL_GetTick() - timon > 1000)     // 1 sekunda naciskania
     {
+    	BUZZ_ON();
+    	HAL_Delay(500);
+    	BUZZ_OFF();
     	timon = HAL_GetTick();
         POWER_ON();    // podtrzymaj zasilanie
     	printf("Power ON\r\n");
@@ -197,11 +207,22 @@ int main(void)
 	chem_type = LTC4015_get_chem();
 	printf("Chem type : %d   Num cells : %d \r\n", chem_type, num_cells);
 	LTC4015_init(); //pusta
-	LTC4015_VBAT_limits(7.6, 12.7, num_cells, chem_type);
+	LTC4015_VBAT_limits(CHARGER_VBAT_LO_LIMIT, CHARGER_VBAT_HI_LIMIT, num_cells, chem_type);
+	HAL_Delay(10);
+	LTC4015_VIN_limits(CHARGER_VIN_LO_LIMIT,CHARGER_VIN_HI_LIMIT);
+	HAL_Delay(10);
+	LTC4015_set_charge_voltage(CHARGER_VOLTAGE, num_cells, chem_type);
+	HAL_Delay(10);
+	LTC4015_set_charge_current(CHARGER_CURRENT, RSNB);
+	stop_run_bsr();
+	HAL_Delay(10);
+//	start_charging();
   }
+
 
   ticks = HAL_GetTick();
   ticks20 = HAL_GetTick();
+  ticks100 = HAL_GetTick();
   ticks5s = HAL_GetTick();
 
   while (1)
@@ -210,37 +231,71 @@ int main(void)
 
 	  checkPowerOff();
 
-	  if(HAL_GetTick()-ticks20 >= 10)
+	  if(HAL_GetTick()-ticks20 >= 20)
 	  {
 	      ticks20 = HAL_GetTick();
+	      ps_pg_state = PS_PG_READ();
+	      rpi_feedback = RPI_FB_READ();
+	      smbalert = SMBALERT_READ();
+	      supply_check_select();
+	  }
+
+	  if(HAL_GetTick()-ticks100 >= 100)
+	  {
+	      ticks100 = HAL_GetTick();
 	      sys_temp = Round_filter_fl(1,GET_Buff_Temp());
 	      fill_voltage_table();
 	      fill_current_table();
-	      ps_pg_state = PS_PG_READ();
-	      rpi_feedback = RPI_FB_READ();
-	      supply_check_select();
 	  }
 
 	  if(HAL_GetTick()-ticks >= 1000)
 	  {
 		  LED1_TOGGLE();
 	      ticks = HAL_GetTick();
-	      printf("Temp round: %3.1f\r\n", sys_temp);
-	      printf("5V SYS: %2.2f  ", volt_table[0]);
-	      printf("5V DC: %2.2f \r\n", volt_table[1]);
-	      printf("12V SYS: %2.2f \r\n", volt_table[3]);
-	      printf("5V STB: %2.2f \r\n", volt_table[2]);
-	      printf("Power Good : %d \r\n", ps_pg_state);
+//	      printf("Temp round: %3.1f\r\n", sys_temp);
+//	      printf("5V SYS: %2.2f  ", volt_table[0]);
+//	      printf("5V DC: %2.2f \r\n", volt_table[1]);
+//	      printf("12V SYS: %2.2f \r\n", volt_table[3]);
+//	      printf("5V STB: %2.2f \r\n", volt_table[2]);
+	      printf("Vin: %2.2f  ", volt_table[5]);
+	      printf("Vbat: %2.2f \r\n", volt_table[6]);
+	      printf("5V SYS Curr : %d ", curr_table[0]);
+	      printf("5V HDD Curr : %d \r\n", curr_table[2]);
+	      printf("12V SYS Curr : %d ", curr_table[1]);
+	      printf("12V HDD Curr : %d \r\n", curr_table[3]);
+	      printf("IIN Curr : %d ", curr_table[4]);
+	      printf("IBAT Curr : %d \r\n", curr_table[5]);
+	      printf("SMBALERT : %d \r\n", smbalert);
+	      printf("DIE TEMP : %2.2f \r\n", LTC4015_get_dietemp());
 	   }
 	  if(HAL_GetTick()-ticks5s >= 5000)
 	  {
 		  ticks5s = HAL_GetTick();
-
+		  print_regs();
+		  start_charging();
 	  }
 
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+void print_regs()
+{
+//	  read_register_val(0x0D);
+//	  read_register_val(0x0E);
+//	  read_register_val(0x0F);
+	  read_register_val(0x14);
+//	  read_register_val(0x29);
+	  read_register_val(0x34);
+	  read_register_val(0x35);
+	  read_register_val(0x36);
+	  read_register_val(0x37);
+	  read_register_val(0x38);
+	  read_register_val(0x39);
+//	  read_register_val(0x45);
+//	  read_register_val(0x47);
+//	  read_register_val(0x4A);
 }
 
 void fill_voltage_table(void)
@@ -250,14 +305,18 @@ void fill_voltage_table(void)
     volt_table[2] = GET_STB_5V();
     volt_table[3] = GET_SYS_12V();
     volt_table[4] = GET_DC_12V();
+    volt_table[5] = LTC4015_get_vin();
+    volt_table[6] = LTC4015_get_vbat(num_cells, chem_type);
 }
 
 void fill_current_table(void)
 {
-    curr_table[0] = GET_SYS_5V_CURR();
-    curr_table[1] = GET_SYS_12V_CURR();
-    curr_table[2] = GET_HDD_5V_CURR();
-    curr_table[3] = GET_HDD_12V_CURR();
+    curr_table[0] = Round_filter_int(1,GET_SYS_5V_CURR());
+    curr_table[1] = Round_filter_int(2,GET_SYS_12V_CURR());
+    curr_table[2] = Round_filter_int(3,GET_HDD_5V_CURR());
+    curr_table[3] = Round_filter_int(4,GET_HDD_12V_CURR());
+    curr_table[4] = Round_filter_int(5,LTC4015_get_iin(RSNI));
+	curr_table[5] = Round_filter_int(6,LTC4015_get_ibat(RSNB));
 }
 
 void supply_check_select()
