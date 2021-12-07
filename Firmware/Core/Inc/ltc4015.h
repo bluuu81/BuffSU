@@ -54,6 +54,9 @@
 #define force_meas_sys_on (1 << 4)
 #define run_bsr (1 << 5)
 
+#define CHARGER_CONFIG_BITS 0x29
+#define en_jeita (1 << 0)
+
 extern I2C_HandleTypeDef hi2c1;
 
 //uint8_t i2c_read16(uint16_t offset, uint16_t *value);
@@ -79,6 +82,8 @@ void start_meas();
 void stop_meas();
 void start_run_bsr();
 void stop_run_bsr();
+void enable_jeita();
+void disable_jeita();
 void LTC4015_init();
 
 #endif /* INC_LTC4015_H_ */

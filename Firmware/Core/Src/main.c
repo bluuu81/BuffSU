@@ -22,6 +22,7 @@
 #include "buff.h"
 #include "adc.h"
 #include "ltc4015.h"
+#include "cli.h"
 #include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
@@ -48,7 +49,7 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 I2C_HandleTypeDef hi2c1;
 IWDG_HandleTypeDef hiwdg;
-TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
 
@@ -63,10 +64,11 @@ UART_HandleTypeDef huart3;
 #define CHARGER_VIN_LO_LIMIT 10.8f
 #define CHARGER_VIN_HI_LIMIT 12.8f
 #define CHARGER_VOLTAGE 8.4f
-#define CHARGER_CURRENT 3.5f
+#define CHARGER_CURRENT 5.5f
 
 uint32_t  ticks, ticks20, ticks100, ticks5s;
-float sys_temp;
+
+float temp_table[3];
 float volt_table[7];
 int16_t curr_table[6];
 
@@ -112,7 +114,7 @@ static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_IWDG_Init(void);
-static void MX_TIM4_Init(void);
+static void MX_TIM2_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
@@ -168,8 +170,9 @@ int main(void)
     if(HAL_GetTick() - timon > 1000)     // 1 sekunda naciskania
     {
     	BUZZ_ON();
-    	HAL_Delay(500);
+    	HAL_Delay(1000);
     	BUZZ_OFF();
+    	RPI_POWER_ON();
     	timon = HAL_GetTick();
         POWER_ON();    // podtrzymaj zasilanie
     	printf("Power ON\r\n");
@@ -182,18 +185,14 @@ int main(void)
   if(run_state == WARMUP)
   {
       HAL_Delay(300);
-      HAL_PWR_DisableWakeUpPin(PWR_WAKEUP_PIN1);
-      __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-      HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN1);
-      printf("Sleep !\r\n");
-      HAL_PWR_EnterSTANDBYMode();
+      MCUgoSleep();
   }
 
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_I2C1_Init();
 
-  MX_TIM4_Init();
+  MX_TIM2_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -215,8 +214,11 @@ int main(void)
 	HAL_Delay(10);
 	LTC4015_set_charge_current(CHARGER_CURRENT, RSNB);
 	stop_run_bsr();
-	HAL_Delay(10);
-//	start_charging();
+	HAL_Delay(100);
+	disable_jeita();
+	HAL_Delay(1000);
+	start_charging();
+	HAL_Delay(1000);
   }
 
 
@@ -228,9 +230,8 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
 	  checkPowerOff();
-
+	  CLI();
 	  if(HAL_GetTick()-ticks20 >= 20)
 	  {
 	      ticks20 = HAL_GetTick();
@@ -243,7 +244,7 @@ int main(void)
 	  if(HAL_GetTick()-ticks100 >= 100)
 	  {
 	      ticks100 = HAL_GetTick();
-	      sys_temp = Round_filter_fl(1,GET_Buff_Temp());
+	      fill_temperature_table();
 	      fill_voltage_table();
 	      fill_current_table();
 	  }
@@ -252,7 +253,7 @@ int main(void)
 	  {
 		  LED1_TOGGLE();
 	      ticks = HAL_GetTick();
-//	      printf("Temp round: %3.1f\r\n", sys_temp);
+//	      printf("Temp round: %3.1f\r\n", temp_table[0]);
 //	      printf("5V SYS: %2.2f  ", volt_table[0]);
 //	      printf("5V DC: %2.2f \r\n", volt_table[1]);
 //	      printf("12V SYS: %2.2f \r\n", volt_table[3]);
@@ -266,13 +267,13 @@ int main(void)
 	      printf("IIN Curr : %d ", curr_table[4]);
 	      printf("IBAT Curr : %d \r\n", curr_table[5]);
 	      printf("SMBALERT : %d \r\n", smbalert);
-	      printf("DIE TEMP : %2.2f \r\n", LTC4015_get_dietemp());
+	      printf("DIE TEMP : %2.2f \r\n", temp_table[1]);
 	   }
 	  if(HAL_GetTick()-ticks5s >= 5000)
 	  {
 		  ticks5s = HAL_GetTick();
 		  print_regs();
-		  start_charging();
+//		  start_charging();
 	  }
 
     /* USER CODE BEGIN 3 */
@@ -285,17 +286,30 @@ void print_regs()
 //	  read_register_val(0x0D);
 //	  read_register_val(0x0E);
 //	  read_register_val(0x0F);
-	  read_register_val(0x14);
+//	  read_register_val(0x14);
 //	  read_register_val(0x29);
+	  printf("--- CHARGER STATE ---\r\n");
 	  read_register_val(0x34);
+	  printf("--- CHARGE STATUS ---\r\n");
 	  read_register_val(0x35);
+	  printf("--- LIMIT ALERTS ---\r\n");
 	  read_register_val(0x36);
+	  printf("--- CHARGER STATE ALERTS ---\r\n");
 	  read_register_val(0x37);
+	  printf("--- CHARGE STATUS ALERTS ---\r\n");
 	  read_register_val(0x38);
+	  printf("--- SYSTEM STATUS ---\r\n");
 	  read_register_val(0x39);
 //	  read_register_val(0x45);
 //	  read_register_val(0x47);
 //	  read_register_val(0x4A);
+}
+
+void fill_temperature_table(void)
+{
+    temp_table[0] = Round_filter_fl(1,GET_Buff_Temp());
+    temp_table[1] = Round_filter_fl(2,LTC4015_get_dietemp());
+    temp_table[2] = 0; // TODO: NTC Temp
 }
 
 void fill_voltage_table(void)
@@ -572,36 +586,36 @@ static void MX_IWDG_Init(void)
 }
 
 /**
-  * @brief TIM4 Initialization Function
+  * @brief TIM2 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_TIM4_Init(void)
+static void MX_TIM2_Init(void)
 {
 
-  /* USER CODE BEGIN TIM4_Init 0 */
+  /* USER CODE BEGIN TIM2_Init 0 */
 
-  /* USER CODE END TIM4_Init 0 */
+  /* USER CODE END TIM2_Init 0 */
 
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
 
-  /* USER CODE BEGIN TIM4_Init 1 */
+  /* USER CODE BEGIN TIM2_Init 1 */
 
-  /* USER CODE END TIM4_Init 1 */
-  htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 0;
-  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 65535;
-  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 374;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 256;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -609,14 +623,14 @@ static void MX_TIM4_Init(void)
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM4_Init 2 */
+  /* USER CODE BEGIN TIM2_Init 2 */
 
-  /* USER CODE END TIM4_Init 2 */
-  HAL_TIM_MspPostInit(&htim4);
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
 
 }
 

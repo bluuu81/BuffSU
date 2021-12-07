@@ -21,7 +21,10 @@ extern UART_HandleTypeDef huart3;
 
 float Round_filter_fl(uint8_t index, float value);
 int16_t Round_filter_int(uint8_t index, int16_t value);
+void Buzz(uint32_t tim);
 void checkPowerOff();
+void MCUgoSleep();
+void CLI();
 
 
 #endif /* INC_BUFF_H_ */

@@ -30,10 +30,12 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
 
+void fill_temperature_table(void);
 void fill_voltage_table(void);
 void fill_current_table(void);
 void supply_check_select(void);
 void print_regs();
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -154,6 +156,10 @@ void Error_Handler(void);
 
 #define BUZZ_ON()		HAL_GPIO_WritePin(Buzz_GPIO_Port, Buzz_Pin, GPIO_PIN_SET)
 #define BUZZ_OFF()		HAL_GPIO_WritePin(Buzz_GPIO_Port, Buzz_Pin, GPIO_PIN_RESET)
+
+#define RPI_POWER_ON()		HAL_GPIO_WritePin(RPI_OFF_GPIO_Port, RPI_OFF_Pin, GPIO_PIN_SET)
+#define RPI_POWER_OFF()		HAL_GPIO_WritePin(RPI_OFF_GPIO_Port, RPI_OFF_Pin, GPIO_PIN_RESET)
+
 
 #define WDR() if(hiwdg.Instance == IWDG) {HAL_IWDG_Refresh(&hiwdg);}
 

@@ -136,13 +136,17 @@ inline void stop_meas()			{ clr_bit(CONFIG_BITS, force_meas_sys_on); }
 inline void start_run_bsr()		{ set_bit(CONFIG_BITS, run_bsr); }
 inline void stop_run_bsr()		{ clr_bit(CONFIG_BITS, run_bsr); }
 
+// Charger config bits
+inline void enable_jeita()		{ set_bit(CHARGER_CONFIG_BITS, en_jeita); }
+inline void disable_jeita()		{ clr_bit(CHARGER_CONFIG_BITS, en_jeita); }
+
 // LTC4015 read registers
 
 uint16_t read_register_val(uint8_t reg)
 {
 	uint16_t value;
 	if(i2c_read16(reg, &value)) return -1;
-	printf("REG : %#04X , Value: %d \r\n", reg, value);
+	printf("REG : %#04X , Value: %#04X \r\n", reg, value);
     return value;
 }
 
