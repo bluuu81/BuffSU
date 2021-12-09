@@ -81,6 +81,7 @@ uint8_t pg_count = 0;
 //charger variables
 uint8_t num_cells, chem_type;
 
+
 enum chem_type
 {
 	LI_ION_PROG = 0,
@@ -189,6 +190,7 @@ int main(void)
   }
 
   MX_DMA_Init();
+  HAL_UART_RxCpltCallback(&huart1);
   MX_ADC1_Init();
   MX_I2C1_Init();
 
@@ -226,12 +228,15 @@ int main(void)
   ticks20 = HAL_GetTick();
   ticks100 = HAL_GetTick();
   ticks5s = HAL_GetTick();
+  STAT_LED_ON();
+  ledSweepPwr(4,0xFFFF,30);
 
   while (1)
   {
     /* USER CODE END WHILE */
 	  checkPowerOff();
 	  CLI();
+	  if(debug_level > 2) debug_level = 0;
 	  if(HAL_GetTick()-ticks20 >= 20)
 	  {
 	      ticks20 = HAL_GetTick();
@@ -251,35 +256,54 @@ int main(void)
 
 	  if(HAL_GetTick()-ticks >= 1000)
 	  {
-		  LED1_TOGGLE();
 	      ticks = HAL_GetTick();
-//	      printf("Temp round: %3.1f\r\n", temp_table[0]);
-//	      printf("5V SYS: %2.2f  ", volt_table[0]);
-//	      printf("5V DC: %2.2f \r\n", volt_table[1]);
-//	      printf("12V SYS: %2.2f \r\n", volt_table[3]);
-//	      printf("5V STB: %2.2f \r\n", volt_table[2]);
-	      printf("Vin: %2.2f  ", volt_table[5]);
-	      printf("Vbat: %2.2f \r\n", volt_table[6]);
-	      printf("5V SYS Curr : %d ", curr_table[0]);
-	      printf("5V HDD Curr : %d \r\n", curr_table[2]);
-	      printf("12V SYS Curr : %d ", curr_table[1]);
-	      printf("12V HDD Curr : %d \r\n", curr_table[3]);
-	      printf("IIN Curr : %d ", curr_table[4]);
-	      printf("IBAT Curr : %d \r\n", curr_table[5]);
-	      printf("SMBALERT : %d \r\n", smbalert);
-	      printf("DIE TEMP : %2.2f \r\n", temp_table[1]);
+	      switch (debug_level)
+	      {
+	      	  case 1:
+	      		  print_regs();
+	      		  break;
+	      	  case 2:
+	      		  print_volt_curr();
+	      		  break;
+
+	      	  case 0:
+	      	  default:
+	      		  break;
+	      }
+
 	   }
+/*
 	  if(HAL_GetTick()-ticks5s >= 5000)
 	  {
 		  ticks5s = HAL_GetTick();
 		  print_regs();
 //		  start_charging();
-	  }
+	  } */
 
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
+
+void print_volt_curr()
+{
+//	printf("Temp round: %3.1f\r\n", temp_table[0]);
+//	printf("5V SYS: %2.2f  ", volt_table[0]);
+//	printf("5V DC: %2.2f \r\n", volt_table[1]);
+//	printf("12V SYS: %2.2f \r\n", volt_table[3]);
+//	printf("5V STB: %2.2f \r\n", volt_table[2]);
+	printf("Vin: %2.2f  V , ", volt_table[5]);
+	printf("Vbat: %2.2f V\r\n", volt_table[6]);
+	printf("5V SYS Curr : %d mA , ", curr_table[0]);
+	printf("5V HDD Curr : %d mA\r\n", curr_table[2]);
+	printf("12V SYS Curr : %d mA , ", curr_table[1]);
+	printf("12V HDD Curr : %d mA\r\n", curr_table[3]);
+	printf("IIN Curr : %d mA , ", curr_table[4]);
+	printf("IBAT Curr : %d mA\r\n", curr_table[5]);
+	printf("SMBALERT : %d \r\n", smbalert);
+	printf("DIE TEMP : %2.2f deg C\r\n", temp_table[1]);
+}
+
 
 void print_regs()
 {
@@ -597,6 +621,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
 
@@ -604,11 +629,20 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 374;
+  htim2.Init.Prescaler = 562;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 256;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
@@ -623,6 +657,10 @@ static void MX_TIM2_Init(void)
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();

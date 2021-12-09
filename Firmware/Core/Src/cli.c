@@ -7,6 +7,8 @@
 
 static char clibuf[32];
 static int cliptr;
+
+#include "main.h"
 #include "cli.h"
 #include "ctype.h"
 #include <stdio.h>
@@ -15,7 +17,9 @@ static int cliptr;
 void help(void)
 {
 	printf("\r\n --CLI-- \r\n");
-	printf("?,help - Show help.\r\n");
+	printf("?,help - Show help\r\n");
+	printf("debug 0..2      0 - off, 1 - LTC4015 registers, 2 - voltage & current\r\n");
+	printf("-------\r\n");
 }
 
 char * find(const char *arg2)							// find token in cmdline
@@ -74,7 +78,7 @@ char * get_hex(char *p, uint8_t chars, uint16_t *val)
 
 void CLI_proc(char ch)
 {
-//	char *p;
+	char *p;
 	if(cliptr < sizeof(clibuf)) clibuf[cliptr++] = ch;
 	if(ch == 10)	// LF
 	{
@@ -82,7 +86,19 @@ void CLI_proc(char ch)
 		memset(clibuf+cliptr, 0, sizeof(clibuf)-cliptr);
 		cliptr = 0;
 // Main commands ------------------------------------------------------------------------------
-		if(find("?")==clibuf+1 || find("help")==clibuf+2)	{help(); return;}
-        // ................................................................................
+		if(find("?")==clibuf+1 || find("help")==clibuf+4)	{help(); return;}
+// ................................................................................
+        if((p = find("debug ")))
+        {
+            int32_t tmp = -1;
+            getval(p, &tmp, 0, 2);
+            if(tmp >= 0)
+            {
+                debug_level = tmp;
+                printf("Debug: %u\r\n", debug_level);
+            }
+            return;
+        }
+
 	}
 }

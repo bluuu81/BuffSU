@@ -30,11 +30,14 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
 
+uint8_t debug_level;
+
 void fill_temperature_table(void);
 void fill_voltage_table(void);
 void fill_current_table(void);
 void supply_check_select(void);
 void print_regs();
+void print_volt_curr();
 
 
 /* Private includes ----------------------------------------------------------*/
@@ -128,6 +131,7 @@ void Error_Handler(void);
 #define LED1_OFF()		HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET)
 #define LED1_TOGGLE()	HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin)
 
+/*
 #define PWR_LED_ON()	HAL_GPIO_WritePin(PWR_LED_GPIO_Port, PWR_LED_Pin, GPIO_PIN_RESET)
 #define PWR_LED_OFF()	HAL_GPIO_WritePin(PWR_LED_GPIO_Port, PWR_LED_Pin, GPIO_PIN_SET)
 #define PWR_LED_TOGGLE() HAL_GPIO_TogglePin(PWR_LED_GPIO_Port, PWR_LED_Pin)
@@ -135,6 +139,15 @@ void Error_Handler(void);
 #define STAT_LED_ON()	HAL_GPIO_WritePin(STAT_LED_GPIO_Port, STAT_LED_Pin, GPIO_PIN_RESET)
 #define STAT_LED_OFF()	HAL_GPIO_WritePin(STAT_LED_GPIO_Port, STAT_LED_Pin, GPIO_PIN_SET)
 #define STAT_LED_TOGGLE() HAL_GPIO_TogglePin(STAT_LED_GPIO_Port, STAT_LED_Pin)
+*/
+
+#define PWR_LED_ON()        setPwrLed(31)
+#define PWR_LED_OFF()       setPwrLed(0)
+#define PWR_LED_TOGGLE()    {if(TIM2->CCR2 & 0xFFFF) setPwrLed(0); else setPwrLed(31);}
+
+#define STAT_LED_ON()        setStatLed(31)
+#define STAT_LED_OFF()       setStatLed(0)
+#define STAT_LED_TOGGLE()    {if(TIM2->CCR1 & 0xFFFF) setStatLed(0); else setStatLed(31);}
 
 #define _5V_SEL_PS()	HAL_GPIO_WritePin(_5V_SEL_GPIO_Port, _5V_SEL_Pin, GPIO_PIN_SET)
 #define _5V_SEL_BUF()	HAL_GPIO_WritePin(_5V_SEL_GPIO_Port, _5V_SEL_Pin, GPIO_PIN_RESET)
