@@ -44,6 +44,7 @@ void debug_putchar(uint8_t ch)
 void HAL_SYSTICK_Callback(void)
 {
 	static uint32_t ledswppwr, ledlevpwr, ledswpstat, ledlevstat;
+
      if(buzzer_time) { if(--buzzer_time == 0) BUZZ_OFF(); }
 
      if(led_tim_pwr && ++ledswppwr >= led_tim_pwr)
@@ -141,6 +142,8 @@ void checkPowerOff()
      Buzz(300);
      if(offTim && HAL_GetTick() - offTim > 2000)    // 2 sekundy naciskania
      {
+    	 ledSweepStat(10,10,5);
+    	 ledSweepPwr(10,10,5);
     	 printf("Wylaczanie w toku ...\r\n");
          rpiTout = HAL_GetTick();  // zaznacz ze wylaczanie w toku i wystartowa³o o...
          RPI_POWER_OFF();           // wymuszenie rpi off
@@ -152,6 +155,7 @@ void checkPowerOff()
       rpiTout = 0;
       stop_meas();
       Buzz(1000);
+ 	  ledSweepStat(20,10,5);
       POWER_OFF();
       printf("Power OFF\r\n");
       HAL_Delay(3000);
@@ -165,6 +169,10 @@ void checkPowerOff()
 
   if(rpiTout)
   {
+ 	  ledSweepStat(20,0xFFFF,15);
+ 	  ledSweepStat(10,0xFFFF,30);
+ 	  Buzz(500);
+
 	  //... tutaj jakies mruganie (nieblokuj¹ce) sygnalizuj¹ce ¿e trwa wy³¹czanie systemu
   }
 }

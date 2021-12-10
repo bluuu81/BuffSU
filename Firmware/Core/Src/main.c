@@ -193,9 +193,8 @@ int main(void)
   HAL_UART_RxCpltCallback(&huart1);
   MX_ADC1_Init();
   MX_I2C1_Init();
-
   MX_TIM2_Init();
-
+  HAL_TIM_Base_Start(&htim2);
   /* USER CODE BEGIN 2 */
 
   ADC_DMA_Start();
@@ -229,8 +228,7 @@ int main(void)
   ticks100 = HAL_GetTick();
   ticks5s = HAL_GetTick();
   STAT_LED_ON();
-  ledSweepPwr(4,0xFFFF,30);
-
+  PWR_LED_ON();
   while (1)
   {
     /* USER CODE END WHILE */
@@ -257,6 +255,7 @@ int main(void)
 	  if(HAL_GetTick()-ticks >= 1000)
 	  {
 	      ticks = HAL_GetTick();
+	      PWR_LED_TOGGLE();
 	      switch (debug_level)
 	      {
 	      	  case 1:
@@ -272,13 +271,14 @@ int main(void)
 	      }
 
 	   }
-/*
+
 	  if(HAL_GetTick()-ticks5s >= 5000)
 	  {
 		  ticks5s = HAL_GetTick();
-		  print_regs();
+		  STAT_LED_TOGGLE();
+//		  print_regs();
 //		  start_charging();
-	  } */
+	  }
 
     /* USER CODE BEGIN 3 */
   }
@@ -372,6 +372,7 @@ void supply_check_select()
 		_12V_SEL_PS();
 		run_state = RUNNING_PS;
 		printf("PS select \r\n");
+//		PWR_LED_ON();
 	}
 
 
@@ -381,6 +382,7 @@ void supply_check_select()
 		_12V_SEL_BUF();
 		run_state = RUNNING_BUFFER;
 		printf("Buffer select \r\n");
+//		ledSweepPwr(4,0xFFFF,30);
 	}
 }
 /**
@@ -655,7 +657,7 @@ static void MX_TIM2_Init(void)
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
