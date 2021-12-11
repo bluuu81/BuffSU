@@ -194,7 +194,10 @@ int main(void)
   MX_ADC1_Init();
   MX_I2C1_Init();
   MX_TIM2_Init();
+  HAL_TIM_Base_Init(&htim2);
   HAL_TIM_Base_Start(&htim2);
+  HAL_TIM_PWM_Init(&htim2);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   /* USER CODE BEGIN 2 */
 
   ADC_DMA_Start();
@@ -227,8 +230,8 @@ int main(void)
   ticks20 = HAL_GetTick();
   ticks100 = HAL_GetTick();
   ticks5s = HAL_GetTick();
-  STAT_LED_ON();
-  PWR_LED_ON();
+//  STAT_LED_ON();
+//  PWR_LED_ON();
   while (1)
   {
     /* USER CODE END WHILE */
@@ -255,7 +258,7 @@ int main(void)
 	  if(HAL_GetTick()-ticks >= 1000)
 	  {
 	      ticks = HAL_GetTick();
-	      PWR_LED_TOGGLE();
+//	      PWR_LED_TOGGLE();
 	      switch (debug_level)
 	      {
 	      	  case 1:
@@ -275,7 +278,7 @@ int main(void)
 	  if(HAL_GetTick()-ticks5s >= 5000)
 	  {
 		  ticks5s = HAL_GetTick();
-		  STAT_LED_TOGGLE();
+//		  STAT_LED_TOGGLE();
 //		  print_regs();
 //		  start_charging();
 	  }
@@ -656,7 +659,7 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 50;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
