@@ -1,0 +1,6 @@
+cli.c:17:5:_write	24	static
+cli.c:23:6:debug_putchar	16	static
+cli.c:30:6:HAL_UART_RxCpltCallback	16	static
+cli.c:35:6:HAL_UART_ErrorCallback	16	static
+cli.c:40:10:UART_has_char	4	static
+cli.c:45:9:UART_receive	16	static
