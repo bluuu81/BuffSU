@@ -1,7 +1,0 @@
-pwm.c:20:6:PWM_Init_Timers	8	static
-pwm.c:26:6:setPwrLed	16	static
-pwm.c:31:6:setStatLed	16	static
-pwm.c:36:6:ledSweepPwr	16	static
-pwm.c:42:6:ledSweepStat	16	static
-pwm.c:48:6:Buzz	16	static
-pwm.c:54:6:HAL_SYSTICK_Callback	8	static

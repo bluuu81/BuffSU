@@ -1,4 +1,0 @@
-buffsu.c:68:6:BuffSU_Loop	8	static
-buffsu.c:89:6:startup_check	16	static
-buffsu.c:122:6:MCUgoSleep	8	static
-buffsu.c:134:6:checkPowerOff	8	static
