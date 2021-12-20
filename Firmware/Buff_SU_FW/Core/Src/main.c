@@ -19,12 +19,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cli.h"
-#include "signaling.h"
-#include <stdio.h>
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "cli.h"
+#include "signaling.h"
+#include "adc.h"
+#include "ltc4015.h"
+#include "buff.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,6 +59,8 @@ UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
+
+
 
 /* USER CODE END PV */
 
@@ -116,17 +121,63 @@ int main(void)
   PWM_Init_Timers();
 //  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-  POWER_ON();
   printf("Initializing ...\r\n");
+  check_powerOn();
+  if (LTC4015_check())
+  {
+	  LTC4015_conf();
+  } else {
+	  printf("LTC4015 init once again ...\r\n");
+	  if (LTC4015_check())
+	  {
+		  LTC4015_conf();
+	  } else printf("No way, LTC4015 not working\r\n");
+  }
+  ADC_DMA_Start();
   /* USER CODE END 2 */
-  ledSweepStat(20,0xFFFF,15);
-  ledSweepPwr(5,0xFFFF,30);
+  ledSweepStat(30,0xFFFF,15);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint32_t ticks100ms = HAL_GetTick();
+  uint32_t ticks1s = HAL_GetTick();
+  uint32_t ticks10ms = HAL_GetTick();
   while (1)
   {
     /* USER CODE END WHILE */
 	  CLI();
+      ps_pg_state = PS_PG_READ();
+  	  supply_check_select();
+	  if(HAL_GetTick()-ticks10ms >= 10)
+	  {
+	  	  ticks10ms = HAL_GetTick();
+	  	  smbalert = SMBALERT_READ();
+	      rpi_feedback = RPI_FB_READ();
+	      check_powerOff();
+
+	  }
+	  if(HAL_GetTick()-ticks100ms >= 100)
+	  {
+	      ticks100ms = HAL_GetTick();
+	      BUFF_fill_values();
+	  }
+	  if(HAL_GetTick()-ticks1s >= 1000)
+	  {
+	  	    ticks1s = HAL_GetTick();
+		    LED_TOGGLE();
+		    switch (debug_level)
+		    {
+		      	case 1:
+		      		print_regs();
+		      		break;
+		      	case 2:
+		      		print_volt_curr();
+		      		break;
+
+		      	case 0:
+		      	default:
+		      		break;
+		    }
+	  }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

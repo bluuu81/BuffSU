@@ -7,6 +7,7 @@
 
 #include "cli.h"
 #include "main.h"
+#include "ltc4015.h"
 #include "ctype.h"
 #include <stdio.h>
 #include <string.h>
@@ -18,8 +19,6 @@ uint16_t uart_rxtail;
 
 static char clibuf[32];
 static int cliptr;
-
-volatile uint8_t debug_level;
 
 
 // printf redirection to UART1
@@ -156,13 +155,13 @@ void CLI_proc(char ch)
             if((p = find("start")))
             {
             	printf("Start charging\r\n");
- //           	start_charging();
+            	start_charging();
                 return;
             }
             if((p = find("stop")))
             {
             	printf("Stop charging\r\n");
- //           	stop_charging();
+            	stop_charging();
                 return;
             }
 

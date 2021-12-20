@@ -29,6 +29,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
+#include "signaling.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -156,8 +157,8 @@ void Error_Handler(void);
 #define PS_ON()			HAL_GPIO_WritePin(PS_ONOFF_GPIO_Port, PS_ONOFF_Pin, GPIO_PIN_SET)
 #define PS_OFF()		HAL_GPIO_WritePin(PS_ONOFF_GPIO_Port, PS_ONOFF_Pin, GPIO_PIN_RESET)
 
-#define BUZZ_ON()		HAL_GPIO_WritePin(Buzz_GPIO_Port, Buzz_Pin, GPIO_PIN_RESET)
-#define BUZZ_OFF()		HAL_GPIO_WritePin(Buzz_GPIO_Port, Buzz_Pin, GPIO_PIN_SET)
+#define BUZZ_ON()		HAL_GPIO_WritePin(Buzz_GPIO_Port, Buzz_Pin, GPIO_PIN_SET)
+#define BUZZ_OFF()		HAL_GPIO_WritePin(Buzz_GPIO_Port, Buzz_Pin, GPIO_PIN_RESET)
 
 #define RPI_POWER_ON()		HAL_GPIO_WritePin(RPI_OFF_GPIO_Port, RPI_OFF_Pin, GPIO_PIN_SET)
 #define RPI_POWER_OFF()		HAL_GPIO_WritePin(RPI_OFF_GPIO_Port, RPI_OFF_Pin, GPIO_PIN_RESET)
