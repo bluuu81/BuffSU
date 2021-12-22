@@ -7,24 +7,23 @@
 
 #include "main.h"
 #include "adc.h"
+#include "buff.h"
 #include <stdio.h>
 
 //TODO - do eepromu, tzn. NVR
-#define TEMP_OFFSET -9.0f;
+#define TEMP_OFFSET -6.0f;
 #define SYS5V_OFFSET 0.0f;
 #define DC5V_OFFSET 0.0f;
 #define STB5V_OFFSET 0.0f;
 #define SYS12V_OFFSET 0.0f;
 #define DC12V_OFFSET 0.0f;
 
-#define CURR_SYS_12V_OFFSET 0;
-#define CURR_HDD_12V_OFFSET 0;
-#define CURR_SYS_5V_OFFSET 0;
-#define CURR_HDD_5V_OFFSET 0;
+#define CURR_SYS_12V_OFFSET -83;
+#define CURR_HDD_12V_OFFSET 62;
+#define CURR_SYS_5V_OFFSET -81;
+#define CURR_HDD_5V_OFFSET 57;
 
 volatile uint16_t adc_data[50];
-volatile float filt=0;
-float temper;
 
 
 void ADC_Print()
@@ -41,8 +40,6 @@ void ADC_Print()
 		}
 		printf("\n");
 		*/
-	  temper = GET_Buff_Temp();
-	  printf("Temp: %.2f\r\n", temper);
 }
 
 
@@ -65,8 +62,8 @@ float GET_Buff_Temp()
 	  	tmp*=0.2f;
 
 	  	temperature = ((1.43-(tmp*(3.3/4096)))/4.3E-03) + 25.0f;
-	  	return temperature+TEMP_OFFSET;
-
+//	  	return temperature+(config.temp_offset);
+	  	return temperature;
 }
 
 
@@ -156,9 +153,10 @@ int16_t GET_HDD_12V_CURR()
 	  	}
 	  	tmp/=5;
 
-	  	current = (((33000U * tmp) / 4096) - 3150) / 2;
-	  	return current+CURR_HDD_12V_OFFSET;
-; // mA
+	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
+	  	current+=CURR_HDD_12V_OFFSET;
+	  	if (current < 0) current = 0;
+	  	return current; // mA
 }
 
 int16_t GET_HDD_5V_CURR()
@@ -172,8 +170,10 @@ int16_t GET_HDD_5V_CURR()
 	  	}
 	  	tmp/=5;
 
-	  	current = (((33000U * tmp) / 4096) - 3150) / 2;
-	  	return current+CURR_HDD_5V_OFFSET; // mA
+	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
+	  	current+=CURR_HDD_5V_OFFSET;
+	  	if (current < 0) current = 0;
+	  	return current; // mA
 }
 
 int16_t GET_SYS_12V_CURR()
@@ -188,7 +188,9 @@ int16_t GET_SYS_12V_CURR()
 	  	tmp/=5;
 
 	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
-	  	return current+CURR_SYS_12V_OFFSET; // mA
+	  	current+=CURR_SYS_12V_OFFSET;
+	  	if (current < 0) current = 0;
+	  	return current; // mA
 }
 
 int16_t GET_SYS_5V_CURR()
@@ -203,6 +205,7 @@ int16_t GET_SYS_5V_CURR()
 	  	tmp/=5;
 
 	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
-//	  	if (current < 0) current = 0;
-	  	return current+CURR_SYS_5V_OFFSET; // mA
+	  	current+=CURR_SYS_5V_OFFSET;
+	  	if (current < 0) current = 0;
+	  	return current; // mA
 }

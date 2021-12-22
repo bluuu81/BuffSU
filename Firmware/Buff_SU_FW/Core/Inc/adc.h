@@ -8,6 +8,8 @@
 #ifndef INC_ADC_H_
 #define INC_ADC_H_
 
+#include "buff.h"
+
 void ADC_DMA_Start();
 void ADC_Print();
 

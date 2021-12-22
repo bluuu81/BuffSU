@@ -27,6 +27,7 @@
 #include "adc.h"
 #include "ltc4015.h"
 #include "buff.h"
+#include "config.h"
 #include <stdio.h>
 /* USER CODE END Includes */
 
@@ -135,6 +136,8 @@ int main(void)
   }
   ADC_DMA_Start();
   /* USER CODE END 2 */
+  Load_defaults();
+  HAL_Delay(50);
   ledSweepStat(30,0xFFFF,15);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */

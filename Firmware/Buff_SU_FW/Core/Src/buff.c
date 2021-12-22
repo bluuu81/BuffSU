@@ -9,6 +9,7 @@
 #include "main.h"
 #include "ltc4015.h"
 #include "adc.h"
+#include "config.h"
 #include <stdio.h>
 
 #define MAX_FILTERS_FL 3
@@ -27,7 +28,6 @@ volatile uint8_t pg_count = 0;
 
 uint8_t ps_pg_state, rpi_feedback, smbalert;
 volatile uint32_t offTim, rpiTout, beepTim;
-
 
 enum run_state
 {
