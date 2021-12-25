@@ -12,8 +12,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CONFIG_VERSION  1
 #define ADDR_FLASH_PAGE_0   ((uint32_t)0x08000000) /* Base @ of Page 0, 1 Kbytes */
+
+
 
 uint16_t Crc16_up(uint16_t crc, uint8_t data)			// calculate CRC
 {
@@ -112,21 +113,6 @@ uint8_t Save_config()
 	return err;			// 0=OK, 1=blad
 }
 
-void Load_defaults()
-{
-	memset((uint8_t*)&config, 0, sizeof(config));
-	config.version 				= CONFIG_VERSION;
-	config.temp_offset			= -6.0f;
-	config.sys5v_offset         = 0.0f;
-	config.dc5v_offset          = 0.0f;
-	config.stb5v_offset         = 0.0f;
-	config.sys12v_offset        = 0.0f;
-	config.dc12v_offset         = 0.0f;
-	config.curr_sys12v_offset	= -83;
-	config.curr_hdd12v_offset	= 62;
-	config.curr_sys5v_offset	= -81;
-	config.curr_hdd5v_offset	= 57;
-}
 
 uint8_t Load_config()
 {

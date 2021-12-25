@@ -10,20 +10,8 @@
 #include "buff.h"
 #include <stdio.h>
 
-//TODO - do eepromu, tzn. NVR
-#define TEMP_OFFSET -6.0f;
-#define SYS5V_OFFSET 0.0f;
-#define DC5V_OFFSET 0.0f;
-#define STB5V_OFFSET 0.0f;
-#define SYS12V_OFFSET 0.0f;
-#define DC12V_OFFSET 0.0f;
-
-#define CURR_SYS_12V_OFFSET -83;
-#define CURR_HDD_12V_OFFSET 62;
-#define CURR_SYS_5V_OFFSET -81;
-#define CURR_HDD_5V_OFFSET 57;
-
 volatile uint16_t adc_data[50];
+uint8_t curr_zero_proc=0;
 
 
 void ADC_Print()
@@ -62,8 +50,7 @@ float GET_Buff_Temp()
 	  	tmp*=0.2f;
 
 	  	temperature = ((1.43-(tmp*(3.3/4096)))/4.3E-03) + 25.0f;
-//	  	return temperature+(config.temp_offset);
-	  	return temperature;
+	  	return temperature+(config.temp_offset);
 }
 
 
@@ -79,7 +66,7 @@ float GET_SYS_5V()
 	  	tmp*=0.2f;
 
 	  	voltage = tmp * (3.3f/4096) * 1.82f;
-	  	return voltage+SYS5V_OFFSET;
+	  	return voltage+(config.sys5v_offset);
 }
 
 float GET_DC_5V()
@@ -94,7 +81,7 @@ float GET_DC_5V()
 	  	tmp*=0.2f;
 
 	  	voltage = tmp * (3.3f/4096) * 1.82f;
-	  	return voltage+DC5V_OFFSET;
+	  	return voltage+(config.dc5v_offset);
 }
 
 float GET_STB_5V()
@@ -109,7 +96,7 @@ float GET_STB_5V()
 	  	tmp*=0.2f;
 
 	  	voltage = tmp * (3.3f/4096) * 1.82f;
-	  	return voltage+STB5V_OFFSET;
+	  	return voltage+(config.stb5v_offset);
 }
 
 float GET_SYS_12V()
@@ -124,7 +111,7 @@ float GET_SYS_12V()
 	  	tmp*=0.2f;
 
 	  	voltage = tmp * (3.3f/4096) * 4.6f;
-	  	return voltage+SYS12V_OFFSET;
+	  	return voltage+(config.sys12v_offset);
 }
 
 float GET_DC_12V()
@@ -139,7 +126,7 @@ float GET_DC_12V()
 	  	tmp*=0.2f;
 
 	  	voltage = tmp * (3.3f/4096) * 4.6f;
-	  	return voltage+DC12V_OFFSET;
+	  	return voltage+(config.dc12v_offset);
 }
 
 int16_t GET_HDD_12V_CURR()
@@ -154,8 +141,11 @@ int16_t GET_HDD_12V_CURR()
 	  	tmp/=5;
 
 	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
-	  	current+=CURR_HDD_12V_OFFSET;
-	  	if (current < 0) current = 0;
+	  	if(!curr_zero_proc)
+	  	{
+	  		current+=(config.curr_hdd12v_offset);
+	  		if (current < 0) current = 0;
+	  	}
 	  	return current; // mA
 }
 
@@ -171,8 +161,11 @@ int16_t GET_HDD_5V_CURR()
 	  	tmp/=5;
 
 	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
-	  	current+=CURR_HDD_5V_OFFSET;
-	  	if (current < 0) current = 0;
+	  	if(!curr_zero_proc)
+	  	{
+	  		current+=(config.curr_hdd5v_offset);
+	  		if (current < 0) current = 0;
+	  	}
 	  	return current; // mA
 }
 
@@ -188,8 +181,11 @@ int16_t GET_SYS_12V_CURR()
 	  	tmp/=5;
 
 	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
-	  	current+=CURR_SYS_12V_OFFSET;
-	  	if (current < 0) current = 0;
+	  	if(!curr_zero_proc)
+	  	{
+	  		current+=(config.curr_sys12v_offset);
+	  		if (current < 0) current = 0;
+	  	}
 	  	return current; // mA
 }
 
@@ -205,7 +201,10 @@ int16_t GET_SYS_5V_CURR()
 	  	tmp/=5;
 
 	  	current = (((33000U * tmp) / 4096) - 3300) / 2;
-	  	current+=CURR_SYS_5V_OFFSET;
-	  	if (current < 0) current = 0;
+	  	if(!curr_zero_proc)
+	  	{
+	  		current+=(config.curr_sys5v_offset);
+	  		if (current < 0) current = 0;
+	  	}
 	  	return current; // mA
 }

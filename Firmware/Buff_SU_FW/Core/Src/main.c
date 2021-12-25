@@ -112,18 +112,19 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_ADC1_Init();
-  MX_I2C1_Init();
   MX_USART1_UART_Init();
-  HAL_UART_RxCpltCallback(&huart1);
-  MX_USART3_UART_Init();
   MX_TIM2_Init();
   PWM_Init_Timers();
 //  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
   printf("Initializing ...\r\n");
   check_powerOn();
+  MX_DMA_Init();
+  MX_ADC1_Init();
+  MX_I2C1_Init();
+  MX_USART3_UART_Init();
+  HAL_UART_RxCpltCallback(&huart1);
+  HAL_UART_RxCpltCallback(&huart3);
   if (LTC4015_check())
   {
 	  LTC4015_conf();
@@ -136,7 +137,7 @@ int main(void)
   }
   ADC_DMA_Start();
   /* USER CODE END 2 */
-  Load_defaults();
+  Config_init();
   HAL_Delay(50);
   ledSweepStat(30,0xFFFF,15);
   /* Infinite loop */
@@ -153,7 +154,7 @@ int main(void)
 	  if(HAL_GetTick()-ticks10ms >= 10)
 	  {
 	  	  ticks10ms = HAL_GetTick();
-	  	  smbalert = SMBALERT_READ();
+	  	  tlm.smb = SMBALERT_READ();
 	      rpi_feedback = RPI_FB_READ();
 	      check_powerOff();
 
@@ -182,6 +183,8 @@ int main(void)
 		    }
 	  }
     /* USER CODE BEGIN 3 */
+	  void telemetryRX();
+	  if (telem_run) telemetrySend();
   }
   /* USER CODE END 3 */
 }

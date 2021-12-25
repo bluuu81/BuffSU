@@ -10,6 +10,8 @@
 
 #include "stm32f1xx_hal.h"
 
+#define FW_VER 11
+#define HW_VER 10
 
 uint8_t Save_config();
 uint8_t Load_config();

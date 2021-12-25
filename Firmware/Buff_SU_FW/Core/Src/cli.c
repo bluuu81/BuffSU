@@ -7,6 +7,7 @@
 
 #include "cli.h"
 #include "main.h"
+#include "config.h"
 #include "ltc4015.h"
 #include "ctype.h"
 #include <stdio.h>
@@ -17,6 +18,9 @@
 uint8_t  uart_rx_buf[RX_BUF_SIZE];
 uint16_t uart_rxtail;
 
+uint8_t telem_rx_buf[32];    // 32 bytes buffer
+uint16_t telem_rxtail;
+
 static char clibuf[32];
 static int cliptr;
 
@@ -24,7 +28,7 @@ static int cliptr;
 // printf redirection to UART1
 int _write(int file, char *ptr, int len)
 {
-    HAL_UART_Transmit(&huart1, (uint8_t *)ptr, len, len+1);  // debug uart
+    HAL_UART_Transmit(&huart1, (uint8_t *)ptr, len, len+1);  // uart1
     return len;
 }
 
@@ -37,7 +41,8 @@ void debug_putchar(uint8_t ch)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    HAL_UART_Receive_IT(&huart1, uart_rx_buf, RX_BUF_SIZE);  // Interrupt start Uart RX
+	if(huart == &huart1) HAL_UART_Receive_IT(&huart1, uart_rx_buf, RX_BUF_SIZE);  // Interrupt start Uart1 RX
+	if(huart == &huart3) HAL_UART_Receive_IT(&huart3, telem_rx_buf, 32); // Interrupt start Uart3 RX
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
@@ -62,12 +67,53 @@ void CLI() {
     if(len) { for(int i=0; i<len; ++i) CLI_proc(UART_receive()); }
 }
 
+uint16_t TELEM_has_char() // Return number of bytes in telem buffer
+{
+    return (huart3.RxXferSize-huart3.RxXferCount+32-telem_rxtail) % 32;
+}
+
+uint8_t TELEM_receive() // Receive byte from telem buffer
+{
+   uint8_t tmp = telem_rx_buf[telem_rxtail++];
+   if(telem_rxtail >= 32) telem_rxtail = 0;
+   return tmp;
+}
+
+void telemetryRX()
+{
+   static uint8_t state;
+   while( TELEM_has_char() )
+   {
+       uint8_t ch = TELEM_receive();
+       switch(state)
+       {
+          case 0: if(ch == 0xBA)	state = 1;
+                      break;
+          case 1: if(ch == 0xDA)	state = 2;
+                      if(ch != 0xDA) state = 0;
+                      break;
+          case 2: if(ch == 0xBE) state = 3;
+                      if(ch != 0xBE) state = 0;
+                      break;
+          case 3: if(ch == 0xAF) state = 4;
+                      if(ch != 0xAF) state = 0;
+                      break;
+          case 4: if(ch == 0xAA) telem_run = 1;
+                      if(ch == 0xFF) telem_run = 0;
+                      state = 0;
+                      break;
+       }
+   }
+}
+
+
 void help()
 {
-	printf("\r\n---CLI--- Buff SU v0.1 \r\n");
+	printf("\r\n--- CLI Buff SU HW v%1.1f, FW v%1.1f ---\r\n", HW_VER/10.0f, FW_VER/10.0f);
 	printf("?,help - Show help\r\n");
 	printf("debug 0..2      0 - off, 1 - LTC4015 registers, 2 - voltage & current\r\n");
 	printf("charger stop/start\r\n");
+	printf("load defaults\r\n");
 	printf("-------\r\n");
 }
 
@@ -136,6 +182,13 @@ void CLI_proc(char ch)
 		cliptr = 0;
 // Main commands ------------------------------------------------------------------------------
 		if(find("?")==clibuf+1 || find("help")==clibuf+4)	{help(); return;}
+		if(find("load defaults")==clibuf+13)
+		{
+			Load_defaults();
+			Save_config();
+			printf("return to defaults ...\r\n");
+			return;
+		}
 // ................................................................................
         if((p = find("debug ")))
         {

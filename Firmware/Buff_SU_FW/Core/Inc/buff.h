@@ -9,7 +9,9 @@
 #define INC_BUFF_H_
 
 #include "stm32f1xx_hal.h"
-extern uint8_t ps_pg_state, rpi_feedback, smbalert;
+extern uint8_t ps_pg_state, rpi_feedback; //smbalert;
+
+#define CONFIG_VERSION  1
 
 typedef struct {
     uint8_t  version;               // struct ver
@@ -26,8 +28,26 @@ typedef struct {
     uint16_t checksum;
 }  __attribute__((packed)) config_t;
 
-extern config_t config;
+typedef struct {
+	float		temps[3];
+	float		volts[7];
+	int16_t		curr[6];
+	uint16_t	supply:2;
+	uint16_t	smb:1;
+	uint16_t	limits:4;
+	uint16_t	charge:2;
+	uint16_t	resv:7;
+} __attribute__((packed)) telem_t;
 
+enum tlm_supply_state {
+	INIT = 0,
+	BUFFER,
+	PS,
+	FAIL,
+};
+
+config_t config;
+telem_t tlm;
 
 float Round_filter_fl(uint8_t index, float value);
 int16_t Round_filter_int(uint8_t index, int16_t value);
@@ -43,4 +63,8 @@ void print_regs();
 void supply_check_select();
 void check_powerOn();
 void check_powerOff();
+void Load_defaults();
+void Config_init();
+void telemetrySend();
+
 #endif /* INC_BUFF_H_ */

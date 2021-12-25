@@ -50,6 +50,7 @@ extern TIM_HandleTypeDef htim2;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart3;
 extern DMA_HandleTypeDef hdma_usart3_tx;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

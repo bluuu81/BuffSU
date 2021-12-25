@@ -10,6 +10,7 @@
 #include "ltc4015.h"
 #include "adc.h"
 #include "config.h"
+#include <string.h>
 #include <stdio.h>
 
 #define MAX_FILTERS_FL 3
@@ -18,16 +19,13 @@
 #define MAX_FILTERS_INT 7
 #define FILTSTR_INT  8       // filter strenght
 
-float temp_table[3];
-float volt_table[7];
-int16_t curr_table[6];
-
 volatile uint8_t run_state = 0;
 volatile uint8_t ps_count = 0;
 volatile uint8_t pg_count = 0;
 
-uint8_t ps_pg_state, rpi_feedback, smbalert;
+uint8_t ps_pg_state, rpi_feedback; // smbalert;
 volatile uint32_t offTim, rpiTout, beepTim;
+
 
 enum run_state
 {
@@ -81,49 +79,50 @@ void MCUgoSleep()
 
 void fill_temperature_table()
 {
-    temp_table[0] = Round_filter_fl(1,GET_Buff_Temp());
-    temp_table[1] = Round_filter_fl(2,LTC4015_get_dietemp());
-    temp_table[2] = 0; // TODO: NTC Temp
+    tlm.temps[0] = Round_filter_fl(1,GET_Buff_Temp());
+    tlm.temps[1] = Round_filter_fl(2,LTC4015_get_dietemp());
+    tlm.temps[2] = 0; // TODO: NTC Temp
 }
 
 void fill_voltage_table()
 {
-    volt_table[0] = GET_SYS_5V();
-    volt_table[1] = GET_DC_5V();
-    volt_table[2] = GET_STB_5V();
-    volt_table[3] = GET_SYS_12V();
-    volt_table[4] = GET_DC_12V();
-    volt_table[5] = LTC4015_get_vin();
-    volt_table[6] = LTC4015_get_vbat(num_cells, chem_type);
+	tlm.volts[0] = GET_SYS_5V();
+	tlm.volts[1] = GET_DC_5V();
+	tlm.volts[2] = GET_STB_5V();
+	tlm.volts[3] = GET_SYS_12V();
+	tlm.volts[4] = GET_DC_12V();
+	tlm.volts[5] = LTC4015_get_vin();
+	tlm.volts[6] = LTC4015_get_vbat(num_cells, chem_type);
 }
 
 void fill_current_table()
 {
-    curr_table[0] = Round_filter_int(1,GET_SYS_5V_CURR());
-    curr_table[1] = Round_filter_int(2,GET_SYS_12V_CURR());
-    curr_table[2] = Round_filter_int(3,GET_HDD_5V_CURR());
-    curr_table[3] = Round_filter_int(4,GET_HDD_12V_CURR());
-    curr_table[4] = Round_filter_int(5,LTC4015_get_iin(RSNI));
-	curr_table[5] = Round_filter_int(6,LTC4015_get_ibat(RSNB));
+    tlm.curr[0] = Round_filter_int(1,GET_SYS_5V_CURR());
+    tlm.curr[1] = Round_filter_int(2,GET_SYS_12V_CURR());
+    tlm.curr[2] = Round_filter_int(3,GET_HDD_5V_CURR());
+    tlm.curr[3] = Round_filter_int(4,GET_HDD_12V_CURR());
+    tlm.curr[4] = Round_filter_int(5,LTC4015_get_iin(RSNI));
+    tlm.curr[5] = Round_filter_int(6,LTC4015_get_ibat(RSNB));
 }
 
 void print_volt_curr()
 {
-	printf("Temp round: %3.1f deg C\r\n", temp_table[0]);
-	printf("5V SYS: %2.2f V ,", volt_table[0]);
-	printf("5V DC: %2.2f V\r\n", volt_table[1]);
-	printf("12V SYS: %2.2f V\r\n", volt_table[3]);
-	printf("5V STB: %2.2f V\r\n", volt_table[2]);
-	printf("Vin: %2.2f  V , ", volt_table[5]);
-	printf("Vbat: %2.2f V\r\n", volt_table[6]);
-	printf("5V SYS Curr : %d mA , ", curr_table[0]);
-	printf("5V HDD Curr : %d mA\r\n", curr_table[2]);
-	printf("12V SYS Curr : %d mA , ", curr_table[1]);
-	printf("12V HDD Curr : %d mA\r\n", curr_table[3]);
-	printf("IIN Curr : %d mA , ", curr_table[4]);
-	printf("IBAT Curr : %d mA\r\n", curr_table[5]);
-	printf("SMBALERT : %d \r\n", smbalert);
-	printf("DIE TEMP : %2.2f deg C\r\n", temp_table[1]);
+	printf("---------------------------\r\n");
+	printf("Temp round: %3.1f deg C\r\n", tlm.temps[0]);
+	printf("5V SYS: %2.2f V ,", tlm.volts[0]);
+	printf("5V DC: %2.2f V\r\n", tlm.volts[1]);
+	printf("12V SYS: %2.2f V\r\n", tlm.volts[3]);
+	printf("5V STB: %2.2f V\r\n", tlm.volts[2]);
+	printf("Vin: %2.2f  V , ", tlm.volts[5]);
+	printf("Vbat: %2.2f V\r\n", tlm.volts[6]);
+	printf("5V SYS Curr : %d mA , ", tlm.curr[0]);
+	printf("5V HDD Curr : %d mA\r\n", tlm.curr[2]);
+	printf("12V SYS Curr : %d mA , ", tlm.curr[1]);
+	printf("12V HDD Curr : %d mA\r\n", tlm.curr[3]);
+	printf("IIN Curr : %d mA , ", tlm.curr[4]);
+	printf("IBAT Curr : %d mA\r\n", tlm.curr[5]);
+	printf("SMBALERT : %d \r\n", tlm.smb);
+	printf("DIE TEMP : %2.2f deg C\r\n", tlm.temps[1]);
 }
 
 
@@ -153,7 +152,7 @@ void print_regs()
 
 void supply_check_select()
 {
-	if((volt_table[2] <= 5.4f && volt_table[2] >= 4.5f) && ps_pg_state == 0 && (run_state == RUNNING_BUFFER || run_state == CHECKING)) ps_count++;
+	if((tlm.volts[2] <= 5.4f && tlm.volts[2] >= 4.5f) && ps_pg_state == 0 && (run_state == RUNNING_BUFFER || run_state == CHECKING)) ps_count++;
 	else ps_count = 0;
 	if(ps_count > 8 && ps_count < 12) { PS_ON(); printf("PS-ON ! \r\n"); }
 	if (ps_pg_state == 1) pg_count++;
@@ -165,6 +164,7 @@ void supply_check_select()
 		_5V_SEL_PS();
 		_12V_SEL_PS();
 		run_state = RUNNING_PS;
+		tlm.supply = PS;
 		printf("PS select \r\n");
 		PWR_LED_ON();
 	}
@@ -175,6 +175,7 @@ void supply_check_select()
 		_5V_SEL_BUF();
 		_12V_SEL_BUF();
 		run_state = RUNNING_BUFFER;
+		tlm.supply = BUFFER;
 		printf("Buffer select \r\n");
 		ledSweepPwr(20,0xFFFF,30);
 	}
@@ -183,6 +184,7 @@ void supply_check_select()
 void check_powerOn()
 {
 	  POWER_OFF();
+	  tlm.supply = INIT;
 	  if (__HAL_PWR_GET_FLAG(PWR_FLAG_SB) != RESET)
 	  {
 	    /* Clear Standby flag */
@@ -250,5 +252,53 @@ void check_powerOff()
 			beepTim = HAL_GetTick();
 		 	Buzz(400);
 		}
+  }
+}
+
+void Load_defaults()
+{
+	memset((uint8_t*)&config, 0, sizeof(config));
+	config.version 				= CONFIG_VERSION;
+	config.temp_offset			= -6.0f;
+	config.sys5v_offset         = 0.0f;
+	config.dc5v_offset          = 0.0f;
+	config.stb5v_offset         = 0.0f;
+	config.sys12v_offset        = 0.0f;
+	config.dc12v_offset         = 0.0f;
+	config.curr_sys12v_offset	= -63;
+	config.curr_hdd12v_offset	= 32;
+	config.curr_sys5v_offset	= -61;
+	config.curr_hdd5v_offset	= 34;
+}
+
+void Config_init()
+{
+	switch(Load_config())
+	{
+    	case 0:
+    		printf("Config OK\r\n");
+    		break;
+    	case 1:
+    		printf("Flash read error, Defaults loaded\r\n");
+    		break;
+    	case 2:
+    		printf("Config corrupted or structure changed, Defaults loaded\r\n");
+    		break;
+    	case 3:
+    		printf("Flash write error!\r\n");
+    		break;
+	}
+}
+
+void telemetrySend()
+{
+   static uint8_t sendbuf[ sizeof(telem_t) ];      // send buffer
+   static uint32_t sendtim;
+
+   if(HAL_GetTick() - sendtim >= 250)            // send every 250ms
+   {
+      sendtim = HAL_GetTick();
+      memcpy(sendbuf, &tlm, sizeof(telem_t));                            // copy to send buffer, &tlm - struct address
+      HAL_UART_Transmit_DMA(&huart3, sendbuf, sizeof(sendbuf));    // send buffer via DMA
   }
 }
