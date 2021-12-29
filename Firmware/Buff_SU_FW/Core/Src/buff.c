@@ -23,9 +23,7 @@ volatile uint8_t run_state = 0;
 volatile uint8_t ps_count = 0;
 volatile uint8_t pg_count = 0;
 
-uint8_t ps_pg_state, rpi_feedback; // smbalert;
 volatile uint32_t offTim, rpiTout, beepTim;
-
 
 enum run_state
 {
@@ -166,6 +164,8 @@ void supply_check_select()
 		run_state = RUNNING_PS;
 		tlm.supply = PS;
 		printf("PS select \r\n");
+		ledSweepPwr(1,1,1);
+		HAL_Delay(100);
 		PWR_LED_ON();
 	}
 
@@ -177,6 +177,7 @@ void supply_check_select()
 		run_state = RUNNING_BUFFER;
 		tlm.supply = BUFFER;
 		printf("Buffer select \r\n");
+		HAL_Delay(10);
 		ledSweepPwr(20,0xFFFF,30);
 	}
 }
@@ -228,13 +229,13 @@ void check_powerOff()
      }
   } else offTim = HAL_GetTick();   // button released, update offTim
 
-  if(rpiTout && HAL_GetTick() - rpiTout > 120000)   // power off in progress and passed 120 sec
+  if(rpiTout && HAL_GetTick() - rpiTout > 125000)   // power off in progress and passed 120 sec
   {
       rpiTout = 0;
       stop_meas();
+      HAL_Delay(3000);
       POWER_OFF();
       printf("Power OFF\r\n");
-      HAL_Delay(3000);
       MCUgoSleep();
   }
   if(RPI_FB_READ() == 0 && HAL_GetTick() - rpiTout < 115000)   // RPi confirmed power off and <5 sec
@@ -292,10 +293,10 @@ void Config_init()
 
 void telemetrySend()
 {
-   static uint8_t sendbuf[ sizeof(telem_t) ];      // send buffer
+   static uint8_t sendbuf[ sizeof(telem_t)];      // send buffer
    static uint32_t sendtim;
 
-   if(HAL_GetTick() - sendtim >= 250)            // send every 250ms
+   if(HAL_GetTick() - sendtim >= 1000)            // send every 1s
    {
       sendtim = HAL_GetTick();
       memcpy(sendbuf, &tlm, sizeof(telem_t));                            // copy to send buffer, &tlm - struct address

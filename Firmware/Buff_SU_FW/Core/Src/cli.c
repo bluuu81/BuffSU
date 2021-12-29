@@ -24,6 +24,8 @@ uint16_t telem_rxtail;
 static char clibuf[32];
 static int cliptr;
 
+uint8_t telem_run = 0;
+
 
 // printf redirection to UART1
 int _write(int file, char *ptr, int len)
@@ -98,8 +100,8 @@ void telemetryRX()
           case 3: if(ch == 0xAF) state = 4;
                       if(ch != 0xAF) state = 0;
                       break;
-          case 4: if(ch == 0xAA) telem_run = 1;
-                      if(ch == 0xFF) telem_run = 0;
+          case 4: if(ch == 0xAA) { telem_run = 1; printf("Telem ON\r\n"); }
+                      if(ch == 0xFF) { telem_run = 0; printf("Telem OFF\r\n"); }
                       state = 0;
                       break;
        }

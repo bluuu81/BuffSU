@@ -9,9 +9,10 @@
 #define INC_BUFF_H_
 
 #include "stm32f1xx_hal.h"
-extern uint8_t ps_pg_state, rpi_feedback; //smbalert;
 
 #define CONFIG_VERSION  1
+
+volatile uint8_t ps_pg_state;
 
 typedef struct {
     uint8_t  version;               // struct ver
@@ -29,6 +30,7 @@ typedef struct {
 }  __attribute__((packed)) config_t;
 
 typedef struct {
+	uint16_t	start_val;
 	float		temps[3];
 	float		volts[7];
 	int16_t		curr[6];

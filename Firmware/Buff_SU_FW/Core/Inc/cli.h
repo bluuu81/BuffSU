@@ -11,7 +11,7 @@
 #include "stm32f1xx_hal.h"
 
 volatile uint8_t debug_level;
-volatile uint8_t telem_run;
+
 
 void CLI();
 void CLI_proc(char ch);

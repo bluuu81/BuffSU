@@ -139,24 +139,30 @@ int main(void)
   /* USER CODE END 2 */
   Config_init();
   HAL_Delay(50);
+  PWR_LED_ON();
   ledSweepStat(30,0xFFFF,15);
+  tlm.start_val = 0xFFFE; //telemetry 2 start bytes
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint32_t ticks100ms = HAL_GetTick();
   uint32_t ticks1s = HAL_GetTick();
   uint32_t ticks10ms = HAL_GetTick();
+  uint32_t RPI_FB_Mask = HAL_GetTick();
   while (1)
   {
     /* USER CODE END WHILE */
 	  CLI();
       ps_pg_state = PS_PG_READ();
-  	  supply_check_select();
 	  if(HAL_GetTick()-ticks10ms >= 10)
 	  {
 	  	  ticks10ms = HAL_GetTick();
+	  	  supply_check_select();
 	  	  tlm.smb = SMBALERT_READ();
-	      rpi_feedback = RPI_FB_READ();
-	      check_powerOff();
+	  	  if(HAL_GetTick()-RPI_FB_Mask > 180000)
+	  	  {
+	  		check_powerOff();
+	  	  }
+
 
 	  }
 	  if(HAL_GetTick()-ticks100ms >= 100)
@@ -183,8 +189,8 @@ int main(void)
 		    }
 	  }
     /* USER CODE BEGIN 3 */
-	  void telemetryRX();
-	  if (telem_run) telemetrySend();
+	  telemetryRX();
+	  if (telem_run == 1) telemetrySend();
   }
   /* USER CODE END 3 */
 }
